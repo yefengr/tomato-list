@@ -46,7 +46,7 @@ const TodoList: React.FC<{
             </div>
             <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-screen opacity-100'}`}>
                 {todos.length > 0 ? (
-                    <ul className="space-y-2 p-4 overflow-y-auto">
+                    <ul className="space-y-2 p-4 overflow-y-auto min-h-48">
                         {todos.map(todo => (
                             <TodoItem
                                 key={todo.id}
@@ -57,7 +57,11 @@ const TodoList: React.FC<{
                         ))}
                     </ul>
                 ) : (
-                     !isCollapsed && <EmptyState message={title === '收件箱' ? '收件箱是空的！' : '今天没有任务，太棒了！'} />
+                     !isCollapsed && (
+                        <div className="p-4 min-h-48 flex flex-col items-center justify-center">
+                            <EmptyState message={title === '收件箱' ? '收件箱是空的！' : '今天没有任务，太棒了！'} />
+                        </div>
+                     )
                 )}
             </div>
         </div>

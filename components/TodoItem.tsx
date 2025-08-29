@@ -42,6 +42,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const [isPrioritySelectorOpen, setPrioritySelectorOpen] = useState(false);
+  const [dropdownDirection, setDropdownDirection] = useState<'up' | 'down'>('down');
   
   const editInputRef = useRef<HTMLInputElement>(null);
   const prioritySelectorRef = useRef<HTMLDivElement>(null);
@@ -84,6 +85,50 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
       setIsEditing(false);
     }
   };
+  
+  const handlePriorityToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isPrioritySelectorOpen) {
+      const ESTIMATED_DROPDOWN_HEIGHT = 120; // px, height of the dropdown
+      const buttonElement = event.currentTarget;
+      
+      let scrollParent = buttonElement.parentElement;
+      while (scrollParent) {
+          const style = window.getComputedStyle(scrollParent);
+          if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+              break; // Found the scrollable container
+          }
+          if (scrollParent.tagName === 'BODY') { // Stop at body
+              scrollParent = null;
+              break;
+          }
+          scrollParent = scrollParent.parentElement;
+      }
+
+      const rect = buttonElement.getBoundingClientRect();
+      
+      // Default to window if no specific scroll parent is found
+      const container = scrollParent || document.documentElement;
+      
+      let spaceBelow: number;
+      let spaceAbove: number;
+
+      if (container === document.documentElement) {
+          spaceBelow = window.innerHeight - rect.bottom;
+          spaceAbove = rect.top;
+      } else {
+          const containerRect = container.getBoundingClientRect();
+          spaceBelow = containerRect.bottom - rect.bottom;
+          spaceAbove = rect.top - containerRect.top;
+      }
+
+      if (spaceBelow < ESTIMATED_DROPDOWN_HEIGHT && spaceAbove > ESTIMATED_DROPDOWN_HEIGHT) {
+        setDropdownDirection('up');
+      } else {
+        setDropdownDirection('down');
+      }
+    }
+    setPrioritySelectorOpen(!isPrioritySelectorOpen);
+  };
 
   const handleSetPriority = (priority: Priority) => {
     onSetPriority(todo.id, priority);
@@ -99,7 +144,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
   
   return (
     <li 
-      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown cursor-grab active:cursor-grabbing`}
+      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown cursor-grab active:cursor-grabbing ${isPrioritySelectorOpen ? 'z-10' : ''}`}
       draggable={!isEditing}
       onDragStart={(e) => onDragStart(e, todo.id)}
     >
@@ -150,7 +195,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
           <>
             <div className="relative" ref={prioritySelectorRef}>
               <button
-                onClick={() => setPrioritySelectorOpen(!isPrioritySelectorOpen)}
+                onClick={handlePriorityToggle}
                 className={`p-2 rounded-full transition-colors ${todo.completed ? 'text-slate-400 cursor-not-allowed' : `${priorityClasses.textColor} hover:bg-slate-200 dark:hover:bg-slate-700`}`}
                 aria-label="Change priority"
                 disabled={todo.completed}
@@ -158,7 +203,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
                 <FlagIcon className="h-5 w-5" />
               </button>
               {isPrioritySelectorOpen && (
-                 <div className="absolute right-0 top-full mt-2 w-28 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-gray-200 dark:border-slate-700 z-30 animate-scaleIn">
+                 <div className={`absolute right-0 w-28 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-gray-200 dark:border-slate-700 z-30 animate-scaleIn ${dropdownDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                    {Object.values(Priority).map((p) => (
                       <button
                         key={p}
