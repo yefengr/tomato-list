@@ -20,15 +20,11 @@ const TodoList: React.FC<{
     onEdit: (id: number, text: string) => void;
     onSetPriority: (id: number, priority: Priority) => void;
     onSetDueDate: (id: number, dueDate: string | undefined) => void;
-    onDragStart: (e: React.DragEvent<HTMLLIElement>, id: number) => void;
-    onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
-    onDrop: (e: React.DragEvent<HTMLDivElement>, group: Group) => void;
-}> = ({ title, todos, activeCount, group, isCollapsible, isCollapsed, onToggleCollapse, ...props }) => {
+    onMoveGroup: (id: number) => void;
+}> = ({ title, todos, activeCount, group, isCollapsible, isCollapsed, onToggleCollapse, onMoveGroup, ...props }) => {
     return (
         <div 
           className="bg-white/50 dark:bg-slate-800/50 rounded-lg shadow-xl backdrop-blur-sm flex flex-col transition-all duration-300"
-          onDragOver={props.onDragOver}
-          onDrop={(e) => props.onDrop(e, group)}
         >
             <div 
               className={`flex justify-between items-center p-4 ${isCollapsible ? 'cursor-pointer' : ''} ${!isCollapsed ? 'border-b border-gray-200 dark:border-slate-700' : ''}`}
@@ -51,7 +47,7 @@ const TodoList: React.FC<{
                             <TodoItem
                                 key={todo.id}
                                 todo={todo}
-                                onDragStart={props.onDragStart}
+                                onMoveGroup={onMoveGroup}
                                 {...props}
                             />
                         ))}
@@ -141,13 +137,19 @@ const App: React.FC = () => {
     );
   }, []);
 
-  const moveTodoGroup = useCallback((id: number, group: Group) => {
+  const handleMoveGroup = useCallback((id: number) => {
+    const todoToMove = todos.find(t => t.id === id);
+    if (todoToMove && todoToMove.group === Group.Today && isInboxCollapsed) {
+      setIsInboxCollapsed(false);
+    }
     setTodos(prevTodos => 
         prevTodos.map(todo => 
-            todo.id === id ? { ...todo, group } : todo
+            todo.id === id 
+            ? { ...todo, group: todo.group === Group.Today ? Group.Inbox : Group.Today } 
+            : todo
         )
     );
-  }, []);
+  }, [todos, isInboxCollapsed]);
 
   const clearCompletedRequest = () => {
     if (todos.some(t => t.completed)) {
@@ -200,20 +202,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent<HTMLLIElement>, id: number) => {
-    e.dataTransfer.setData("todoId", id.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetGroup: Group) => {
-    e.preventDefault();
-    const todoId = parseInt(e.dataTransfer.getData("todoId"), 10);
-    moveTodoGroup(todoId, targetGroup);
-  };
-  
   const inboxTodos = useMemo(() => todos.filter(t => t.group === Group.Inbox), [todos]);
   const todayTodos = useMemo(() => todos.filter(t => t.group === Group.Today), [todos]);
   
@@ -293,9 +281,7 @@ const App: React.FC = () => {
                 onEdit={editTodo}
                 onSetPriority={editTodoPriority}
                 onSetDueDate={editTodoDueDate}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
+                onMoveGroup={handleMoveGroup}
             />
             <TodoList
                 title="收件箱"
@@ -310,9 +296,7 @@ const App: React.FC = () => {
                 onEdit={editTodo}
                 onSetPriority={editTodoPriority}
                 onSetDueDate={editTodoDueDate}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
+                onMoveGroup={handleMoveGroup}
             />
         </div>
 

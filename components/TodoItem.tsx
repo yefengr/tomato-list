@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import type { Todo } from '../types';
-import { Priority } from '../types';
-import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon } from './icons';
+import { Priority, Group } from '../types';
+import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon, MoveToTodayIcon, MoveToInboxIcon } from './icons';
 
 interface TodoItemProps {
   todo: Todo;
@@ -10,7 +10,7 @@ interface TodoItemProps {
   onEdit: (id: number, text: string) => void;
   onSetPriority: (id: number, priority: Priority) => void;
   onSetDueDate: (id: number, dueDate: string | undefined) => void;
-  onDragStart: (e: React.DragEvent<HTMLLIElement>, id: number) => void;
+  onMoveGroup: (id: number) => void;
 }
 
 const priorityMap = {
@@ -38,7 +38,7 @@ const formatDate = (dueDate: string): { text: string, isOverdue: boolean } => {
 };
 
 
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onDragStart }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onMoveGroup }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const [isPrioritySelectorOpen, setPrioritySelectorOpen] = useState(false);
@@ -144,9 +144,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
   
   return (
     <li 
-      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown cursor-grab active:cursor-grabbing ${isPrioritySelectorOpen ? 'z-10' : ''}`}
-      draggable={!isEditing}
-      onDragStart={(e) => onDragStart(e, todo.id)}
+      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown ${isPrioritySelectorOpen ? 'z-10' : ''}`}
     >
       <div className={`absolute left-0 top-0 h-full w-1.5 rounded-l-lg ${todo.completed ? 'bg-slate-400 dark:bg-slate-600' : priorityClasses.color}`}></div>
       <div className="flex-1 flex items-start">
@@ -233,6 +231,25 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
                     className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                 />
             </div>
+            {todo.group === Group.Inbox ? (
+                <button
+                  onClick={() => onMoveGroup(todo.id)}
+                  className="p-2 text-slate-400 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                  aria-label="移至今日代办"
+                  title="移至今日代办"
+                >
+                  <MoveToTodayIcon className="h-5 w-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => onMoveGroup(todo.id)}
+                  className="p-2 text-slate-400 dark:text-slate-400 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+                  aria-label="移回收件箱"
+                  title="移回收件箱"
+                >
+                  <MoveToInboxIcon className="h-5 w-5" />
+                </button>
+              )}
             <button
               onClick={handleEdit}
               className="p-2 text-slate-400 dark:text-slate-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
