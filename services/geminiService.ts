@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Todo } from '../types';
 import { Priority } from '../types';
@@ -14,16 +13,35 @@ const translatePriority = (priority: Priority): string => {
   }
 }
 
+const formatDateForPrompt = (dueDate: string | undefined): string => {
+    if (!dueDate) return '无';
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0,0,0,0);
+    
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return `已逾期 ${-diffDays} 天`;
+    if (diffDays === 0) return '今天截止';
+    if (diffDays === 1) return '明天截止';
+    return `${diffDays} 天后截止`;
+}
+
 export const getSmartSortedTasks = async (tasks: Todo[]): Promise<string[]> => {
   if (tasks.length < 2) {
     return tasks.map(t => t.text);
   }
 
-  const taskDescriptions = tasks.map(task => `- ${task.text} (优先级: ${translatePriority(task.priority)})`).join('\n');
+  const taskDescriptions = tasks.map(task => 
+    `- ${task.text} (优先级: ${translatePriority(task.priority)}, 截止日期: ${formatDateForPrompt(task.dueDate)})`
+  ).join('\n');
 
   const prompt = `
-    作为一名效率专家，请根据以下待办事项清单（包含优先级），按紧急程度、重要性、优先级和预估精力进行重新排序。
-    请高度重视“高”优先级的任务。
+    作为一名效率专家，请根据以下待办事项清单（包含优先级和截止日期），按紧急程度、重要性、优先级和预估精力进行重新排序。
+    请高度重视“高”优先级的任务以及即将截止或已逾期的任务。
     仅返回一个 JSON 字符串数组，其中每个字符串都是原始列表中任务的精确文本。
     不要添加新任务或修改现有任务的文本。
 

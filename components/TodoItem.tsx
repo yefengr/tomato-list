@@ -1,9 +1,7 @@
-
-
 import React, { useState, useRef, useEffect, memo } from 'react';
 import type { Todo } from '../types';
-import { Priority, Group } from '../types';
-import { TrashIcon, EditIcon, CheckIcon, FlagIcon } from './icons';
+import { Priority } from '../types';
+import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon } from './icons';
 
 interface TodoItemProps {
   todo: Todo;
@@ -11,6 +9,7 @@ interface TodoItemProps {
   onDeleteRequest: (id: number) => void;
   onEdit: (id: number, text: string) => void;
   onSetPriority: (id: number, priority: Priority) => void;
+  onSetDueDate: (id: number, dueDate: string | undefined) => void;
   onDragStart: (e: React.DragEvent<HTMLLIElement>, id: number) => void;
 }
 
@@ -20,13 +19,33 @@ const priorityMap = {
   [Priority.Low]: { color: 'bg-blue-500', text: '低', textColor: 'text-blue-500' },
 };
 
+const formatDate = (dueDate: string): { text: string, isOverdue: boolean } => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    const isOverdue = due < today;
+    
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onDragStart }) => {
+    if (diffDays === 0) return { text: '今天', isOverdue: false };
+    if (diffDays === 1) return { text: '明天', isOverdue: false };
+    if (diffDays === -1) return { text: '昨天', isOverdue: true };
+    if (isOverdue) return { text: `逾期 ${-diffDays} 天`, isOverdue: true };
+    
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', weekday: 'short' };
+    return { text: new Intl.DateTimeFormat('zh-CN', options).format(due), isOverdue: false };
+};
+
+
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onDragStart }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const [isPrioritySelectorOpen, setPrioritySelectorOpen] = useState(false);
+  
   const editInputRef = useRef<HTMLInputElement>(null);
   const prioritySelectorRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isEditing) {
@@ -71,40 +90,52 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
     setPrioritySelectorOpen(false);
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onSetDueDate(todo.id, e.target.value || undefined);
+  };
+
   const priorityClasses = priorityMap[todo.priority] || priorityMap[Priority.Medium];
+  const dateInfo = todo.dueDate ? formatDate(todo.dueDate) : null;
   
   return (
     <li 
-      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown cursor-grab active:cursor-grabbing ${isPrioritySelectorOpen ? 'z-20' : 'z-auto'}`}
+      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown cursor-grab active:cursor-grabbing`}
       draggable={!isEditing}
       onDragStart={(e) => onDragStart(e, todo.id)}
     >
       <div className={`absolute left-0 top-0 h-full w-1.5 rounded-l-lg ${todo.completed ? 'bg-slate-400 dark:bg-slate-600' : priorityClasses.color}`}></div>
-      <div className="flex items-center flex-grow">
+      <div className="flex-1 flex items-start">
         <input
           type="checkbox"
           checked={todo.completed}
           onChange={() => onToggle(todo.id)}
-          className={`h-6 w-6 rounded-full bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 focus:ring-offset-0 focus:ring-2 cursor-pointer ${todo.completed ? 'text-green-500 focus:ring-green-500' : 'text-violet-500 focus:ring-violet-500'}`}
+          className={`mt-1 h-6 w-6 rounded-full bg-gray-200 dark:bg-slate-700 border-gray-300 dark:border-slate-600 focus:ring-offset-0 focus:ring-2 cursor-pointer ${todo.completed ? 'text-green-500 focus:ring-green-500' : 'text-violet-500 focus:ring-violet-500'}`}
         />
-        {isEditing ? (
-          <input
-            ref={editInputRef}
-            type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={handleKeyDown}
-            className="ml-4 flex-grow bg-gray-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-violet-500 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        ) : (
-          <span
-            onDoubleClick={handleEdit}
-            className={`ml-4 text-lg ${todo.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}
-          >
-            {todo.text}
-          </span>
-        )}
+        <div className="ml-4 flex-1">
+           {isEditing ? (
+            <input
+              ref={editInputRef}
+              type="text"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-gray-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-violet-500 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+          ) : (
+            <span
+              onDoubleClick={handleEdit}
+              className={`text-lg ${todo.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}
+            >
+              {todo.text}
+            </span>
+          )}
+          {dateInfo && !isEditing && (
+            <div className={`text-sm mt-1 ${dateInfo.isOverdue ? 'text-red-500 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
+                {dateInfo.text}
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex items-center space-x-1 ml-4">
         {isEditing ? (
@@ -127,7 +158,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
                 <FlagIcon className="h-5 w-5" />
               </button>
               {isPrioritySelectorOpen && (
-                 <div className="absolute right-0 bottom-full mb-2 w-28 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-gray-200 dark:border-slate-700 z-10 animate-scaleIn">
+                 <div className="absolute right-0 top-full mt-2 w-28 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-gray-200 dark:border-slate-700 z-30 animate-scaleIn">
                    {Object.values(Priority).map((p) => (
                       <button
                         key={p}
@@ -140,6 +171,22 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
                    ))}
                  </div>
               )}
+            </div>
+             <div className="relative">
+                <button
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  className="p-2 text-slate-400 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  aria-label="Set due date"
+                >
+                  <CalendarIcon className="h-5 w-5" />
+                </button>
+                <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={todo.dueDate || ''}
+                    onChange={handleDateChange}
+                    className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                />
             </div>
             <button
               onClick={handleEdit}

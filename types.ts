@@ -1,4 +1,3 @@
-
 export enum Priority {
   Low = 'low',
   Medium = 'medium',
@@ -16,6 +15,7 @@ export interface Todo {
   completed: boolean;
   priority: Priority;
   group: Group;
+  dueDate?: string; // YYYY-MM-DD format
 }
 
 export enum FilterStatus {

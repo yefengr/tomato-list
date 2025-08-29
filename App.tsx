@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Todo } from './types';
 import { Priority, Group } from './types';
@@ -20,6 +19,7 @@ const TodoList: React.FC<{
     onDeleteRequest: (id: number) => void;
     onEdit: (id: number, text: string) => void;
     onSetPriority: (id: number, priority: Priority) => void;
+    onSetDueDate: (id: number, dueDate: string | undefined) => void;
     onDragStart: (e: React.DragEvent<HTMLLIElement>, id: number) => void;
     onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
     onDrop: (e: React.DragEvent<HTMLDivElement>, group: Group) => void;
@@ -125,6 +125,14 @@ const App: React.FC = () => {
     setTodos(prevTodos =>
       prevTodos.map(todo =>
         todo.id === id ? { ...todo, priority } : todo
+      )
+    );
+  }, []);
+
+  const editTodoDueDate = useCallback((id: number, dueDate: string | undefined) => {
+    setTodos(prevTodos =>
+      prevTodos.map(todo =>
+        todo.id === id ? { ...todo, dueDate } : todo
       )
     );
   }, []);
@@ -280,6 +288,7 @@ const App: React.FC = () => {
                 onDeleteRequest={deleteTodoRequest}
                 onEdit={editTodo}
                 onSetPriority={editTodoPriority}
+                onSetDueDate={editTodoDueDate}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
@@ -296,6 +305,7 @@ const App: React.FC = () => {
                 onDeleteRequest={deleteTodoRequest}
                 onEdit={editTodo}
                 onSetPriority={editTodoPriority}
+                onSetDueDate={editTodoDueDate}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
