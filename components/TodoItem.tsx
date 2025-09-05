@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import type { Todo } from '../types';
 import { Priority, Group } from '../types';
-import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon, MoveToTodayIcon, MoveToInboxIcon, TomatoIcon, MinusIcon, PlusIcon } from './icons';
+import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon, MoveToTodayIcon, MoveToInboxIcon, TomatoIcon, MinusIcon, PlusIcon, PlayIcon, PauseIcon } from './icons';
 
 interface TodoItemProps {
   todo: Todo;
@@ -12,6 +12,10 @@ interface TodoItemProps {
   onSetDueDate: (id: number, dueDate: string | undefined) => void;
   onSetPomodoros: (id: number, count: number) => void;
   onMoveGroup: (id: number) => void;
+  activeTodoId: number | null;
+  timerState: 'running' | 'paused' | 'idle';
+  onStartTimer: (id: number) => void;
+  onPauseTimer: () => void;
 }
 
 const priorityMap = {
@@ -39,7 +43,7 @@ const formatDate = (dueDate: string): { text: string, isOverdue: boolean } => {
 };
 
 
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onSetPomodoros, onMoveGroup }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onSetPomodoros, onMoveGroup, activeTodoId, timerState, onStartTimer, onPauseTimer }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const [isPrioritySelectorOpen, setPrioritySelectorOpen] = useState(false);
@@ -143,10 +147,15 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
   const priorityClasses = priorityMap[todo.priority] || priorityMap[Priority.Medium];
   const dateInfo = todo.dueDate ? formatDate(todo.dueDate) : null;
   const pomodoroCount = todo.pomodoros ?? 1;
+  const completedPomodoros = todo.completedPomodoros ?? 0;
   
+  const isActive = todo.id === activeTodoId;
+  const isTimerOnThisTodo = isActive && (timerState === 'running' || timerState === 'paused');
+  const isAnyOtherTaskActive = activeTodoId !== null && !isActive;
+
   return (
     <li 
-      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown ${isPrioritySelectorOpen ? 'z-10' : ''}`}
+      className={`relative flex items-center p-4 pl-6 bg-white dark:bg-slate-800 rounded-lg shadow-md transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700/50 animate-fadeInDown ${isPrioritySelectorOpen ? 'z-10' : ''} ring-2 ${isTimerOnThisTodo ? 'ring-violet-500' : 'ring-transparent'}`}
     >
       <div className={`absolute left-0 top-0 h-full w-1.5 rounded-l-lg ${todo.completed ? 'bg-slate-400 dark:bg-slate-600' : priorityClasses.color}`}></div>
       <div className="flex-1 flex items-start">
@@ -183,28 +192,32 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
                   <span>{dateInfo.text}</span>
                 </div>
               )}
-              <div className={`flex items-center ${todo.completed ? 'opacity-50' : ''}`}>
-                  <TomatoIcon className="w-4 h-4 mr-1 text-red-500" />
-                  <span>{pomodoroCount}</span>
-                  <div className="ml-1.5 flex items-center rounded-md border border-slate-200 dark:border-slate-600">
-                      <button 
-                          onClick={() => !todo.completed && onSetPomodoros(todo.id, pomodoroCount - 1)}
-                          disabled={todo.completed || pomodoroCount <= 1}
-                          className="px-1 py-0.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-l-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                          aria-label="减少番茄数量"
-                      >
-                          <MinusIcon className="w-3 h-3" />
-                      </button>
-                      <div className="w-px h-4 bg-slate-200 dark:bg-slate-600"></div>
-                      <button 
-                          onClick={() => !todo.completed && onSetPomodoros(todo.id, pomodoroCount + 1)}
-                          disabled={todo.completed}
-                          className="px-1 py-0.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                          aria-label="增加番茄数量"
-                      >
-                          <PlusIcon className="w-3 h-3" />
-                      </button>
+              
+              {dateInfo && <span className="text-slate-300 dark:text-slate-600 -mx-2"> • </span>}
+
+              <div className={`group flex items-center transition-opacity ${todo.completed ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <button 
+                      onClick={() => !todo.completed && onSetPomodoros(todo.id, pomodoroCount - 1)}
+                      disabled={todo.completed || pomodoroCount <= 1}
+                      className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
+                      aria-label="减少番茄数量"
+                  >
+                      <MinusIcon className="w-3.5 h-3.5" />
+                  </button>
+                  
+                  <div className="flex items-center mx-1 cursor-default" title={`已完成 ${completedPomodoros} / 预计 ${pomodoroCount} 个番茄钟`}>
+                      <TomatoIcon className="w-4 h-4 mr-1 text-red-500" />
+                      <span className="font-medium w-12 text-center select-none">{completedPomodoros} / {pomodoroCount}</span>
                   </div>
+
+                  <button 
+                      onClick={() => !todo.completed && onSetPomodoros(todo.id, pomodoroCount + 1)}
+                      disabled={todo.completed}
+                      className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-0 disabled:cursor-not-allowed"
+                      aria-label="增加番茄数量"
+                  >
+                      <PlusIcon className="w-3.5 h-3.5" />
+                  </button>
               </div>
             </div>
           )}
@@ -221,6 +234,27 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
           </button>
         ) : (
           <>
+             {isTimerOnThisTodo && timerState === 'running' ? (
+                <button
+                onClick={onPauseTimer}
+                className="p-2 text-orange-500 dark:text-orange-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                aria-label="暂停计时"
+                title="暂停计时"
+                >
+                <PauseIcon className="h-5 w-5" />
+                </button>
+            ) : (
+                <button
+                onClick={() => onStartTimer(todo.id)}
+                disabled={todo.completed || isAnyOtherTaskActive}
+                className="p-2 text-green-500 dark:text-green-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors disabled:text-slate-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                aria-label="开始计时"
+                title="开始计时"
+                >
+                <PlayIcon className="h-5 w-5" />
+                </button>
+            )}
+
             <div className="relative" ref={prioritySelectorRef}>
               <button
                 onClick={handlePriorityToggle}
