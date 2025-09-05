@@ -16,6 +16,7 @@ export interface Todo {
   priority: Priority;
   group: Group;
   dueDate?: string; // YYYY-MM-DD format
+  pomodoros?: number; // 预计完成任务需要的番茄钟数量
 }
 
 export enum FilterStatus {

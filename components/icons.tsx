@@ -1,16 +1,24 @@
 import React from 'react';
 
-export const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m1-12a1.06 1.06 0 012.12 0 1.06 1.06 0 01-2.12 0zM16 5a1.06 1.06 0 012.12 0 1.06 1.06 0 01-2.12 0zM17 17a1.06 1.06 0 012.12 0 1.06 1.06 0 01-2.12 0zM12 1a1.06 1.06 0 012.12 0 1.06 1.06 0 01-2.12 0z" />
-  </svg>
-);
-
 export const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
   </svg>
 );
+
+export const MinusIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+  </svg>
+);
+
+export const TomatoIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+        <path d="M10 2a4 4 0 0 0-4 4c0 1.253.585 2.37 1.5 3.125V10a.5.5 0 0 1-1 0V8.5a.5.5 0 0 0-1 0v1.5a.5.5 0 0 1-1 0V9a.5.5 0 0 0-1 0v1a2.5 2.5 0 0 0 2.5 2.5h.5c.571 0 1.125-.113 1.637-.323a3.5 3.5 0 0 0 6.726 0C14.375 12.387 14.929 12.5 15.5 12.5h.5A2.5 2.5 0 0 0 18.5 10V9a.5.5 0 0 0-1 0v1a.5.5 0 0 1-1 0V8.5a.5.5 0 0 0-1 0v1.5a.5.5 0 0 1-1 0V9.125c.915-.755 1.5-1.872 1.5-3.125a4 4 0 0 0-4-4Z" />
+        <path d="M12.94 2.127a3.42 3.42 0 0 0-1.88-.126C10.5 2.053 10 2.5 10 2.5s-.5-.447-1.06-.399a3.42 3.42 0 0 0-1.88.126 1.42 1.42 0 0 0-.94 1.265c0 .385.163.74.437 1.002.275.262.637.406.963.406h5c.325 0 .687-.144.963-.406a1.42 1.42 0 0 0 .437-1.002 1.42 1.42 0 0 0-.94-1.265Z" />
+    </svg>
+);
+
 
 export const TrashIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,13 +36,6 @@ export const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
-);
-
-export const LoadingSpinner: React.FC<{ className?: string }> = ({ className }) => (
-    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
 );
 
 export const SunIcon: React.FC<{ className?: string }> = ({ className }) => (

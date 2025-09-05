@@ -1,5 +1,5 @@
 {
-  "name": "智能待办清单 (Smart Todo List)",
+  "name": "番茄清单 (Pomodoro Todo List)",
   "description": "一个使用 Gemini API 智能排序任务的现代化待办清单应用。",
   "requestFramePermissions": []
 }

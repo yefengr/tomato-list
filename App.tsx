@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Todo } from './types';
 import { Priority, Group } from './types';
-import { getSmartSortedTasks } from './services/geminiService';
 import TodoItem from './components/TodoItem';
 import EmptyState from './components/EmptyState';
 import ConfirmationModal from './components/ConfirmationModal';
-import { SparklesIcon, PlusIcon, LoadingSpinner, SunIcon, MoonIcon, ChevronDownIcon, ChevronUpIcon } from './components/icons';
+import { PlusIcon, SunIcon, MoonIcon, ChevronDownIcon, ChevronUpIcon } from './components/icons';
 
 const TodoList: React.FC<{
     title: string;
@@ -20,6 +19,7 @@ const TodoList: React.FC<{
     onEdit: (id: number, text: string) => void;
     onSetPriority: (id: number, priority: Priority) => void;
     onSetDueDate: (id: number, dueDate: string | undefined) => void;
+    onSetPomodoros: (id: number, count: number) => void;
     onMoveGroup: (id: number) => void;
 }> = ({ title, todos, activeCount, group, isCollapsible, isCollapsed, onToggleCollapse, onMoveGroup, ...props }) => {
     return (
@@ -70,8 +70,6 @@ const App: React.FC = () => {
     return savedTodos ? JSON.parse(savedTodos) : [];
   });
   const [newTodo, setNewTodo] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [pendingDeletion, setPendingDeletion] = useState<number | 'clear-completed' | null>(null);
   const [isInboxCollapsed, setIsInboxCollapsed] = useState(true);
@@ -95,7 +93,7 @@ const App: React.FC = () => {
   const addTodo = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim()) {
-      setTodos([{ id: Date.now(), text: newTodo.trim(), completed: false, priority: Priority.Medium, group: Group.Inbox }, ...todos]);
+      setTodos([{ id: Date.now(), text: newTodo.trim(), completed: false, priority: Priority.Medium, group: Group.Inbox, pomodoros: 1 }, ...todos]);
       setNewTodo('');
       setIsInboxCollapsed(false); // expand inbox when a new task is added
     }
@@ -137,6 +135,14 @@ const App: React.FC = () => {
     );
   }, []);
 
+  const editTodoPomodoros = useCallback((id: number, count: number) => {
+    setTodos(prevTodos =>
+      prevTodos.map(todo =>
+        todo.id === id && count >= 1 ? { ...todo, pomodoros: count } : todo
+      )
+    );
+  }, []);
+
   const handleMoveGroup = useCallback((id: number) => {
     const todoToMove = todos.find(t => t.id === id);
     if (todoToMove && todoToMove.group === Group.Today && isInboxCollapsed) {
@@ -170,38 +176,6 @@ const App: React.FC = () => {
       setPendingDeletion(null);
   };
 
-  const handleSmartSort = async () => {
-    setError(null);
-    setIsLoading(true);
-    try {
-      const todayActiveTasks = todos.filter(t => !t.completed && t.group === Group.Today);
-      
-      if (todayActiveTasks.length < 2) {
-        setIsLoading(false);
-        return;
-      }
-      
-      const sortedTaskTexts = await getSmartSortedTasks(todayActiveTasks);
-
-      const taskMap = new Map(todayActiveTasks.map(task => [task.text, task]));
-      const sortedTodayTasks = sortedTaskTexts.map(text => taskMap.get(text)).filter((t): t is Todo => t !== undefined);
-      
-      const unsortedTodayTasks = todayActiveTasks.filter(task => !sortedTaskTexts.includes(task.text));
-      const otherTasks = todos.filter(t => t.group !== Group.Today || t.completed);
-      
-      setTodos([...otherTasks, ...sortedTodayTasks, ...unsortedTodayTasks]);
-
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('发生未知错误');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const inboxTodos = useMemo(() => todos.filter(t => t.group === Group.Inbox), [todos]);
   const todayTodos = useMemo(() => todos.filter(t => t.group === Group.Today), [todos]);
   
@@ -227,7 +201,7 @@ const App: React.FC = () => {
       <div className="w-full max-w-4xl mx-auto">
         <header className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-indigo-600">
-            智能清单
+            番茄清单
           </h1>
           <div className="flex items-center space-x-2">
             <button 
@@ -240,23 +214,9 @@ const App: React.FC = () => {
              {completedCount > 0 && (
                 <button onClick={clearCompletedRequest} className="px-3 py-1.5 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors font-medium">清除已完成 ({completedCount})</button>
               )}
-            <button
-              onClick={handleSmartSort}
-              disabled={isLoading || activeTodayCount < 2}
-              className="flex items-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition-all duration-300 disabled:bg-slate-500 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <LoadingSpinner className="h-5 w-5 mr-2" />
-              ) : (
-                <SparklesIcon className="h-5 w-5 mr-2" />
-              )}
-              智能排序今日任务
-            </button>
           </div>
         </header>
         
-        {error && <div className="bg-red-500/20 border border-red-500 text-red-400 dark:text-red-300 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</div>}
-
         <form onSubmit={addTodo} className="mb-6 relative">
           <input
             type="text"
@@ -281,6 +241,7 @@ const App: React.FC = () => {
                 onEdit={editTodo}
                 onSetPriority={editTodoPriority}
                 onSetDueDate={editTodoDueDate}
+                onSetPomodoros={editTodoPomodoros}
                 onMoveGroup={handleMoveGroup}
             />
             <TodoList
@@ -296,6 +257,7 @@ const App: React.FC = () => {
                 onEdit={editTodo}
                 onSetPriority={editTodoPriority}
                 onSetDueDate={editTodoDueDate}
+                onSetPomodoros={editTodoPomodoros}
                 onMoveGroup={handleMoveGroup}
             />
         </div>

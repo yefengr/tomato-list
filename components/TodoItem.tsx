@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import type { Todo } from '../types';
 import { Priority, Group } from '../types';
-import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon, MoveToTodayIcon, MoveToInboxIcon } from './icons';
+import { TrashIcon, EditIcon, CheckIcon, FlagIcon, CalendarIcon, MoveToTodayIcon, MoveToInboxIcon, TomatoIcon, MinusIcon, PlusIcon } from './icons';
 
 interface TodoItemProps {
   todo: Todo;
@@ -10,6 +10,7 @@ interface TodoItemProps {
   onEdit: (id: number, text: string) => void;
   onSetPriority: (id: number, priority: Priority) => void;
   onSetDueDate: (id: number, dueDate: string | undefined) => void;
+  onSetPomodoros: (id: number, count: number) => void;
   onMoveGroup: (id: number) => void;
 }
 
@@ -38,7 +39,7 @@ const formatDate = (dueDate: string): { text: string, isOverdue: boolean } => {
 };
 
 
-const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onMoveGroup }) => {
+const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, onEdit, onSetPriority, onSetDueDate, onSetPomodoros, onMoveGroup }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const [isPrioritySelectorOpen, setPrioritySelectorOpen] = useState(false);
@@ -141,6 +142,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
 
   const priorityClasses = priorityMap[todo.priority] || priorityMap[Priority.Medium];
   const dateInfo = todo.dueDate ? formatDate(todo.dueDate) : null;
+  const pomodoroCount = todo.pomodoros ?? 1;
   
   return (
     <li 
@@ -173,9 +175,37 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDeleteRequest, on
               {todo.text}
             </span>
           )}
-          {dateInfo && !isEditing && (
-            <div className={`text-sm mt-1 ${dateInfo.isOverdue ? 'text-red-500 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
-                {dateInfo.text}
+          {!isEditing && (
+            <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {dateInfo && (
+                <div className={`flex items-center ${dateInfo.isOverdue ? 'text-red-500 font-semibold' : ''}`}>
+                  <CalendarIcon className="w-4 h-4 mr-1.5" />
+                  <span>{dateInfo.text}</span>
+                </div>
+              )}
+              <div className={`flex items-center ${todo.completed ? 'opacity-50' : ''}`}>
+                  <TomatoIcon className="w-4 h-4 mr-1 text-red-500" />
+                  <span>{pomodoroCount}</span>
+                  <div className="ml-1.5 flex items-center rounded-md border border-slate-200 dark:border-slate-600">
+                      <button 
+                          onClick={() => !todo.completed && onSetPomodoros(todo.id, pomodoroCount - 1)}
+                          disabled={todo.completed || pomodoroCount <= 1}
+                          className="px-1 py-0.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-l-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          aria-label="减少番茄数量"
+                      >
+                          <MinusIcon className="w-3 h-3" />
+                      </button>
+                      <div className="w-px h-4 bg-slate-200 dark:bg-slate-600"></div>
+                      <button 
+                          onClick={() => !todo.completed && onSetPomodoros(todo.id, pomodoroCount + 1)}
+                          disabled={todo.completed}
+                          className="px-1 py-0.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          aria-label="增加番茄数量"
+                      >
+                          <PlusIcon className="w-3 h-3" />
+                      </button>
+                  </div>
+              </div>
             </div>
           )}
         </div>

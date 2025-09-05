@@ -1,5 +1,5 @@
 {
-  "name": "智能待办清单-(smart-todo-list)",
+  "name": "番茄清单-(pomodoro-todo-list)",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.16.0",
     "react-dom": "^19.1.1",
     "react": "^19.1.1"
   },
